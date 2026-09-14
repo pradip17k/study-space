@@ -23,3 +23,85 @@ body:not(.focused) #focus-message{display:none}
 
 /* Choose the sound mix during setup; keep audio playing in focus mode. */
 .focused .sound-panel { display: none; }
+
+/* Touch layouts and browser toolbars: keep setup readable and focus centered. */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { min-height:100svh; }
+.panel { min-width:0; }
+button { touch-action:manipulation; }
+input, #session-name, .duration-input input { font-size:16px; }
+.icon-button, .presets button, .mode-switch button, .start-button, .reset-button, .mute-button, #exit-focus { min-height:44px; }
+.icon-button,.reset-button { min-width:44px; }
+.sound-row button { min-height:44px; }
+.sound-row input[type=range] { height:28px; margin-top:4px; background:transparent; }
+label,.panel-description,.themes button { font-size:14px; }
+.sound-row small,#audio-status { font-size:12px; }
+.time-display { white-space:nowrap; }
+.focused main { min-height:100svh; min-height:100dvh; padding: max(84px, env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) max(40px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left)); }
+.focused .time-display { font-size:clamp(64px,17vw,220px); letter-spacing:-.035em; }
+#exit-focus { top:max(16px,env(safe-area-inset-top)); left:max(20px,env(safe-area-inset-left)); }
+#resume-audio { display:block; margin:20px auto; min-height:44px; padding:8px 18px; background:var(--field); border:1px solid var(--border); border-radius:24px; color:var(--text); font-size:14px; }
+@media (min-width:701px) and (max-width:1180px) {
+ .workspace { grid-template-columns:repeat(2,minmax(0,1fr)); max-width:920px; gap:24px; padding:0 32px; }
+ .clock-panel { grid-column:1/-1; grid-row:1; min-height:0; padding:0 0 28px; }
+ .session-panel { grid-column:1; grid-row:2; }
+ .sound-panel { grid-column:2; grid-row:2; }
+ .session-label,body.clock-mode .session-label { margin-top:24px; }
+ .time-display { font-size:clamp(88px,12vw,132px); }
+ .clock-bottom { padding-top:20px; }
+ .intro { padding:24px 16px; }
+ .panel { padding:24px; }
+ .header-note { display:none; }
+ .focused .workspace { padding:0; }
+}
+@media (max-width:700px) {
+ header { height:72px; margin:0 20px; }
+ .header-note { display:none; }
+ .intro { padding:22px 20px; }
+ .intro h1 { font-size:28px; }
+ .intro>p:last-child { font-size:14px; }
+ .workspace { display:flex; flex-direction:column; padding:0 16px; gap:18px; width:100%; }
+ .session-panel { order:0; }
+ .sound-panel { order:1; }
+ .clock-panel { order:2; min-height:0; padding:24px 8px; }
+ .panel { padding:22px; }
+ .panel-heading { margin-bottom:18px; }
+ .session-tip { display:none; }
+ .themes { gap:12px; }
+ .themes button { flex:1; }
+ .swatch { width:100%; max-width:86px; height:38px; }
+ .sound-row { padding:9px 0; }
+ .sound-row input[type=range] { margin-left:0; width:100%; height:32px; }
+ .session-label,body.clock-mode .session-label { margin-top:24px; }
+ .time-display { font-size:clamp(62px,20vw,116px); letter-spacing:-.035em; }
+ .mode-switch { max-width:100%; }
+ .mode-switch button { padding:8px 12px; font-size:14px; }
+ .clock-bottom { padding-top:20px; font-size:10px; letter-spacing:1px; }
+ .focused .clock-panel { padding:0; }
+ .focused .workspace { padding:0; }
+ .focused .time-display { font-size:clamp(62px,20vw,140px); letter-spacing:-.035em; }
+ .focused .time-display span { margin:0 2px; top:0; }
+ footer { padding-bottom:max(20px,env(safe-area-inset-bottom)); }
+}
+@media (max-height:500px) and (orientation:landscape) {
+ .focused main { padding-top:70px; padding-bottom:16px; }
+ .focused .time-display { font-size:min(24vh,140px); }
+ .focused .timer-actions { margin-top:14px; }
+ #focus-message:empty { display:none; }
+}
+@media (pointer:coarse) { .panel { backdrop-filter:none; -webkit-backdrop-filter:none; } }
+.focused main { flex-direction:column; }
+
+.stream-open{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:46px;margin-top:14px;border:1px solid var(--border);border-radius:9px;background:var(--field);font-size:14px;color:var(--text)}
+.spotify-badge{color:#1ed760;font-style:normal}.youtube-badge{color:#ff5252;font-style:normal}.stream-hint{font-size:12px;color:var(--muted);text-align:center;margin-top:7px}
+#stream-dialog{width:min(460px,calc(100% - 32px));max-height:calc(100dvh - 40px);overflow:auto;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:20px;padding:26px;box-shadow:0 30px 100px #0008}
+#stream-dialog::backdrop{background:#000b;backdrop-filter:blur(6px)}.stream-logos{display:flex;justify-content:center;align-items:center;gap:18px;font-size:30px;margin-bottom:14px}.stream-logos>span:nth-child(2){font-size:18px;color:var(--muted)}
+#stream-title{text-align:center;font-size:22px}#stream-dialog h2+p{text-align:center;font-size:14px;color:var(--muted);margin:8px 0 22px}
+#stream-link{width:100%;min-height:48px;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--field);color:var(--text);font-size:16px}#stream-link[aria-invalid=true]{border-color:#ed8d83}
+.stream-support{display:flex;flex-direction:column;gap:5px;margin-top:14px;font-size:12px;color:var(--muted)}.stream-support i{margin-right:7px}
+#stream-privacy{font-size:12px;color:var(--muted);margin-top:14px}#stream-error{font-size:13px;color:#ed8d83;margin-top:10px;min-height:20px}
+.stream-dialog-actions{display:flex;gap:12px;margin-top:12px}.stream-dialog-actions button{flex:1;border:1px solid var(--border);border-radius:9px;min-height:44px;background:var(--field);color:var(--text)}.stream-dialog-actions button[type=submit]{background:var(--accent);color:var(--accent-text)}
+.stream-player{width:100%;max-width:440px;margin-top:24px;border:1px solid var(--border);border-radius:12px;padding:10px;background:var(--field)}.stream-toolbar{display:flex;align-items:center;gap:12px;padding:0 3px 8px;font-size:13px}.stream-toolbar>span{margin-right:auto}.stream-toolbar button{background:none;border:0;min-width:44px;min-height:44px;font-size:13px}.stream-toolbar #remove-stream{font-size:24px}
+#stream-mount iframe{display:block;width:100%;border:0;border-radius:8px;height:200px}.stream-player[data-provider=spotify] iframe{height:352px}.stream-help{font-size:12px;color:var(--muted);margin:10px 3px 3px}.stream-help a{text-decoration:underline;text-underline-offset:3px}
+.focused.has-stream .time-display{font-size:clamp(62px,12vw,150px)}.focused.has-stream main{padding-top:80px}.focused.has-stream .stream-player{margin-top:24px}.focused.has-stream .timer-actions{margin-top:10px}
+@media(max-width:700px){#stream-dialog{padding:22px}.stream-player{max-width:440px;padding:8px}.focused.has-stream .time-display{font-size:clamp(54px,17vw,110px)}.focused.has-stream main{justify-content:flex-start;padding-top:90px}}

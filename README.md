@@ -13,3 +13,7 @@ The timer uses a wall-clock deadline to catch up after background tab throttling
 https://pradip17k.github.io/study-space/
 
 GitHub Pages serves `docs/` from `main`. The standalone source is in `dist/`. After changing the website, copy the updated contents of `dist/` into `docs/` and push both directories. No backend, account, or installation is needed to use the website.
+
+## Mobile and streaming update
+
+Phone and tablet layouts now have larger touch targets, safe-area spacing, and a centered focus view. Stream music accepts full Spotify and YouTube links; its official player remains visible during focus. Audio resumption after a mobile interruption may require a tap. Provider playback and sign-in requirements still apply. Run `node test/stream-link.test.cjs` to check URL validation.

@@ -6,8 +6,20 @@ const display = $('#time-display');
 const status = $('#session-status');
 const minutes = $('#minutes');
 const audio = { context: null, master: null, sources: new Map(), muted: false };
-function enterFocus() { document.body.classList.add('focused'); $('#exit-focus').hidden = false; start.focus(); }
-function leaveFocus() { document.body.classList.remove('focused'); $('#exit-focus').hidden = true; $('#session-name').focus(); }
+function enterFocus() {
+  document.activeElement?.blur();
+  document.body.classList.add('focused');
+  $('#exit-focus').hidden = false;
+  (mode === 'clock' ? $('#exit-focus') : start).focus({preventScroll:true});
+  window.scrollTo({top:0,behavior:'instant'});
+  if(audio.sources.size && !audio.muted) resumeAudio();
+}
+function leaveFocus() {
+  document.body.classList.remove('focused'); $('#exit-focus').hidden = true;
+  document.querySelector('.session-panel').scrollIntoView({block:'start',behavior:'instant'});
+  // Focus a heading rather than reopening the phone keyboard.
+  document.querySelector('.session-panel h2').focus({preventScroll:true});
+}
 function updateName() { $('#session-label').textContent = $('#session-name').value.trim() || 'Your focus session'; }
 function setDuration(value) {
   if (!Number.isInteger(value) || value < 1 || value > 180) throw new Error('Choose a whole number from 1 to 180 minutes.');
@@ -72,7 +84,7 @@ $$('button[data-theme]').forEach(button=>button.addEventListener('click',()=>{
  $$('button[data-theme]').forEach(item=>item.setAttribute('aria-pressed',String(item===button)));
  try{localStorage.setItem('study-space-theme',button.dataset.theme);}catch{}
 }));
-try { const theme=localStorage.getItem('study-space-theme'); if(['night','warm','light'].includes(theme)) $(`[data-theme="${theme}"]`).click(); } catch {}
+try { const theme=localStorage.getItem('study-space-theme'); if(['night','warm','light'].includes(theme)) $(`button[data-theme="${theme}"]`).click(); } catch {}
 start.addEventListener('click',toggleSession);
 $('#reset').addEventListener('click',resetTimer);
 $('#exit-focus').addEventListener('click',()=>{leaveFocus();render();});
@@ -80,6 +92,7 @@ $('#fullscreen').addEventListener('click',async()=>{
  try { if(document.fullscreenElement) await document.exitFullscreen();else await document.documentElement.requestFullscreen(); }
  catch {status.textContent='Fullscreen is unavailable in this browser. Focus mode still works.';}
 });
+$('#fullscreen').hidden = !document.fullscreenEnabled;
 document.addEventListener('fullscreenchange',()=>$('#fullscreen').setAttribute('aria-label',document.fullscreenElement?'Exit fullscreen':'Enter fullscreen'));
 document.addEventListener('keydown',event=>{if(event.key==='Escape' && document.body.classList.contains('focused')){leaveFocus();render();}});
 setInterval(()=>{
@@ -91,6 +104,7 @@ function initAudio(){
  const AudioContext = window.AudioContext || window.webkitAudioContext;
  if(!AudioContext) throw new Error('Audio is not supported in this browser.');
  audio.context=new AudioContext();audio.master=audio.context.createGain();audio.master.gain.value=audio.muted?0:.45;audio.master.connect(audio.context.destination);
+ audio.context.addEventListener('statechange',syncAudioRecovery);
 }
 function buildSound(kind){
  const ctx=audio.context;const gain=ctx.createGain();gain.gain.value=0;gain.connect(audio.master);
@@ -127,7 +141,19 @@ function syncSound(){
  $$('[data-sound]').forEach(button=>{const on=audio.sources.has(button.dataset.sound);button.setAttribute('aria-pressed',String(on));button.querySelector('.sound-toggle').textContent=on?'−':'+';});
  $('#mute').setAttribute('aria-pressed',String(audio.muted));$('#mute').textContent=audio.muted?'♬  Unmute sounds':'♬  Mute all sounds';
  $('#audio-status').textContent=audio.muted?'Sounds muted.':audio.sources.size?`${audio.sources.size} sound${audio.sources.size===1?'':'s'} in your mix.`:'Choose a sound to begin listening.';
+ syncAudioRecovery();
 }
+function syncAudioRecovery(){
+ const interrupted=!!audio.context && audio.context.state!=='running' && audio.sources.size>0 && !audio.muted;
+ $('#resume-audio').hidden=!interrupted;
+ if(interrupted) $('#audio-status').textContent='Audio was interrupted. Tap Resume sound.';
+}
+async function resumeAudio(){
+ if(!audio.context || audio.muted)return;
+ try{await audio.context.resume();}catch{ /* A direct tap may be required. */ }
+ syncAudioRecovery();
+}
+$('#resume-audio').addEventListener('click',resumeAudio);
 const pendingSounds=new Set();
 async function toggleSound(kind){
  if(pendingSounds.has(kind))return;
@@ -147,9 +173,10 @@ async function toggleSound(kind){
 }
 $$('[data-sound]').forEach(button=>button.addEventListener('click',()=>toggleSound(button.dataset.sound)));
 $$('[data-volume]').forEach(input=>input.addEventListener('input',()=>{const sound=audio.sources.get(input.dataset.volume);if(sound)sound.gain.gain.setTargetAtTime(Number(input.value)/100,audio.context.currentTime,.08);}));
-$('#mute').addEventListener('click',()=>{audio.muted=!audio.muted;if(audio.master)audio.master.gain.setTargetAtTime(audio.muted?0:.45,audio.context.currentTime,.1);syncSound();});
+$('#mute').addEventListener('click',()=>{audio.muted=!audio.muted;if(audio.master)audio.master.gain.setTargetAtTime(audio.muted?0:.45,audio.context.currentTime,.1);if(!audio.muted)resumeAudio();syncSound();});
 window.addEventListener('pagehide',()=>{if(audio.context)audio.context.suspend();});
-window.addEventListener('pageshow',()=>{if(audio.context?.state==='suspended' && audio.sources.size)$('#audio-status').textContent='Tap a sound to resume audio.';});
+window.addEventListener('pageshow',syncAudioRecovery);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){if(running)remaining=Math.max(0,(deadline-Date.now())/1000);render();syncAudioRecovery();}});
 updateName();render();
 if(document.modelContext?.registerTool){
  const lifecycle=new AbortController();
@@ -157,3 +184,37 @@ if(document.modelContext?.registerTool){
  window.addEventListener('pagehide',()=>lifecycle.abort(),{once:true});
 }
 
+
+// Load only the selected provider after the user submits a validated URL.
+const streamDialog = document.querySelector('#stream-dialog');
+const streamLink = document.querySelector('#stream-link');
+const streamError = document.querySelector('#stream-error');
+const streamPlayer = document.querySelector('#stream-player');
+const streamMount = document.querySelector('#stream-mount');
+function openStreamDialog(){streamError.textContent='';streamLink.removeAttribute('aria-invalid');streamDialog.showModal();}
+document.querySelector('#open-stream').addEventListener('click',openStreamDialog);
+document.querySelector('#change-stream').addEventListener('click',openStreamDialog);
+document.querySelector('#cancel-stream').addEventListener('click',()=>streamDialog.close());
+streamLink.addEventListener('input',()=>{streamError.textContent='';streamLink.removeAttribute('aria-invalid');});
+document.querySelector('#stream-form').addEventListener('submit',event=>{
+ event.preventDefault();
+ try{
+  const selected=window.parseStreamLink(streamLink.value);
+  const frame=document.createElement('iframe');
+  frame.src=selected.embed;frame.title=`${selected.provider} music player`;
+  frame.allow='autoplay; encrypted-media; fullscreen; picture-in-picture';frame.allowFullscreen=true;
+  frame.referrerPolicy='strict-origin-when-cross-origin';
+  streamMount.replaceChildren(frame);
+  streamPlayer.dataset.provider=selected.provider.toLowerCase();
+  streamPlayer.hidden=false;
+  document.querySelector('#stream-provider').textContent=selected.provider;
+  const external=document.querySelector('#stream-external');external.href=selected.original;external.textContent=`Open in ${selected.provider} ↗`;
+  document.body.classList.add('has-stream');
+  streamDialog.close();
+  streamPlayer.scrollIntoView({block:'center',behavior:'instant'});
+ }catch(error){streamError.textContent=error.message;streamLink.setAttribute('aria-invalid','true');streamLink.focus();}
+});
+document.querySelector('#remove-stream').addEventListener('click',()=>{
+ streamMount.replaceChildren();streamPlayer.hidden=true;document.body.classList.remove('has-stream');
+ (document.body.classList.contains('focused')?document.querySelector('#exit-focus'):document.querySelector('#open-stream')).focus();
+});
